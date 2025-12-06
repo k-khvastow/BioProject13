@@ -1,2 +1,6 @@
 acevedo/
 output_acevedo/
+inference_reports
+log/
+*.pyc
+__pycache__/
