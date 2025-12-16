@@ -16,6 +16,7 @@ from torchvision.transforms import v2
 from src.models.NCA import SegNCA
 from src.losses.LossFunctions import DiceLoss
 from src.agents.Agent import Agent
+from src.utils.utils import compute_dataset_mean_std
 
 @dataclass
 class Config:
@@ -50,41 +51,6 @@ def find_paired_paths(config: Config) -> Tuple[List[Path], List[Path]]:
             valid_masks.append(mask_path)
 
     return valid_images, valid_masks
-
-def compute_dataset_statistics(image_paths: List[Path], resize_dim: int) -> Tuple[List[float], List[float]]:
-    print("Computing dataset statistics...")
-    
-    # Default fallbacks
-    default_mean = [0.82, 0.72, 0.83]
-    default_std = [0.16, 0.24, 0.09]
-
-    if not image_paths:
-        return default_mean, default_std
-
-    channels_sum = torch.zeros(3)
-    channels_sq_sum = torch.zeros(3)
-    count = 0
-
-    for path in image_paths:
-        try:
-            with Image.open(path) as img:
-                img = img.convert("RGB").resize((resize_dim, resize_dim))
-                tensor = v2.functional.to_tensor(img)
-                
-                channels_sum += torch.mean(tensor, dim=[1, 2])
-                channels_sq_sum += torch.mean(tensor ** 2, dim=[1, 2])
-                count += 1
-        except Exception as e:
-            print(f"Skipping {path}: {e}", file=sys.stderr)
-
-    if count == 0:
-        return default_mean, default_std
-
-    mean = (channels_sum / count).tolist()
-    std = ((channels_sq_sum / count - (channels_sum / count) ** 2) ** 0.5).tolist()
-
-    print(f"Stats - Mean: {mean}, Std: {std}")
-    return mean, std
 
 class SegmentationDataset(data.Dataset):
     def __init__(self, images: List[Path], masks: List[Path], resize: int, mean: List[float], std: List[float]):
@@ -174,7 +140,7 @@ def main():
     
     print(f"Found {len(images)} pairs.")
 
-    mean, std = compute_dataset_statistics(images, cfg.resize)
+    mean, std = compute_dataset_mean_std(images, cfg.resize)
     
     X_train, X_test, y_train, y_test = train_test_split(images, masks, test_size=0.2, random_state=42)
 

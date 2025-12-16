@@ -5,6 +5,44 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from torchvision.transforms import v2
 from PIL import Image
+from pathlib import Path
+
+def compute_dataset_mean_std(image_paths: list[Path], resize_dim: int) -> tuple[list[float], list[float]]:
+    """
+    Calculates the mean and standard deviation of the dataset for normalization.
+    """
+    print("Calculating dataset mean and std...")
+    
+    channels_sum = torch.zeros(3)
+    channels_sq_sum = torch.zeros(3)
+    num_pixels = 0
+
+    for path in image_paths:
+        try:
+            with Image.open(path) as img:
+                img = img.convert("RGB").resize((resize_dim, resize_dim))
+                
+                # Convert to Tensor (0-1 range)
+                img_tensor = v2.functional.to_tensor(img) 
+                
+                # Update accumulators
+                channels_sum += torch.mean(img_tensor, dim=[1, 2])
+                channels_sq_sum += torch.mean(img_tensor ** 2, dim=[1, 2])
+                num_pixels += 1
+        except Exception as e:
+            print(f"Warning: Could not process {path} for stats calc. Error: {e}")
+            
+    if num_pixels == 0:
+        raise ValueError("No images processed for stats. Cannot proceed.")
+
+    # Calculate Mean and Std
+    mean = (channels_sum / num_pixels).tolist()
+    std = ((channels_sq_sum / num_pixels - (channels_sum / num_pixels) ** 2) ** 0.5).tolist()
+    
+    print(f"Calculated Mean: {mean}")
+    print(f"Calculated Std:  {std}")
+    
+    return mean, std
 
 def get_data(data_path,show_distribution=True,dataset="AML"):
     #returns list of image paths and list of corresponding labels
