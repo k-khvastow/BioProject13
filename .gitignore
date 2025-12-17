@@ -4,3 +4,4 @@ inference_reports
 log/
 *.pyc
 __pycache__/
+test.py
