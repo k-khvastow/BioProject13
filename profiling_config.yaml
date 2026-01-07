@@ -1,0 +1,11 @@
+# Profiling Configuration
+model_type: "fastseg"   # 'fastseg' or 'triton'
+channel_n: 32
+hidden_size: 32
+steps: 16
+batch_size: 1
+input_h: 256
+input_w: 256
+compile_mode: "reduce-overhead" # 'none', 'default', 'reduce-overhead', 'max-autotune'
+device: "cuda"
+output_dir: "inference_reports"
